@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-qui-parent</artifactId>
+    <version>0.0.0-SNAPSHOT</version>
+    <name>Quarkus User Interface - Parent</name>
+
+    <packaging>pom</packaging>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.release>11</maven.compiler.release>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+        <quarkus.version>1.9.2.Final</quarkus.version>
+        <compiler-plugin.version>3.8.1</compiler-plugin.version>
+
+        <version.lwjgl>3.2.3</version.lwjgl>
+        <version.skija>0.6.1</version.skija>
+    </properties>
+
+    <modules>
+        <module>deployment</module>
+        <module>runtime</module>
+      <module>example</module>
+    </modules>
+
+    <repositories>
+        <repository>
+            <!-- For Skija -->
+            <id>space-maven</id>
+            <url>https://packages.jetbrains.team/maven/p/skija/maven</url>
+        </repository>
+    </repositories>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom</artifactId>
+                <version>${quarkus.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.lwjgl</groupId>
+                <artifactId>lwjgl-bom</artifactId>
+                <version>${version.lwjgl}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jetbrains.skija</groupId>
+                <artifactId>skija-shared</artifactId>
+                <version>${version.skija}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jetbrains.skija</groupId>
+                <artifactId>skija-linux</artifactId>
+                <version>${version.skija}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jetbrains.skija</groupId>
+                <artifactId>skija-macos</artifactId>
+                <version>${version.skija}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jetbrains.skija</groupId>
+                <artifactId>skija-windows</artifactId>
+                <version>${version.skija}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${compiler-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>
