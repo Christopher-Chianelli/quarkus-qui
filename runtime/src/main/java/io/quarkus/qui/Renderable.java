@@ -1,13 +1,13 @@
 package io.quarkus.qui;
 
 /**
- * Do not show this; to render a drawable is to
+ * Do not show this; to render a Renderable is to
  * render itself. The purpose of this class is
  * to do the actual drawing to the canvas; the
  * rest of the methods in the interface have
  * been implemented with dummy methods.
  */
-public interface Drawable extends Props, View {
+public interface Renderable extends Props, View {
     @Override
     default Props _reset() {
         return this;

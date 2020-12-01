@@ -11,7 +11,6 @@ public interface Window {
         Props props = view();
         Props<?> render = props._getView().render(props);
         draw(render);
-
         ViewManager.INSTANCE.endRender(this);
         return render;
     }

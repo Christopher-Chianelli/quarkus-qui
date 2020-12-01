@@ -12,6 +12,8 @@ import org.jetbrains.skija.ColorSpace;
 import org.jetbrains.skija.DirectContext;
 import org.jetbrains.skija.FramebufferFormat;
 import org.jetbrains.skija.IRect;
+import org.jetbrains.skija.Path;
+import org.jetbrains.skija.Rect;
 import org.jetbrains.skija.Surface;
 import org.jetbrains.skija.SurfaceColorFormat;
 import org.jetbrains.skija.SurfaceOrigin;
@@ -32,6 +34,13 @@ public class SkijaWindow implements Window {
     public boolean vsync = true;
     private String os = System.getProperty("os.name").toLowerCase();
     Props<?> props;
+
+    public SkijaWindow(IRect bounds) {
+        xpos = bounds.getLeft();
+        ypos = bounds.getTop();
+        width = bounds.getWidth();
+        height = bounds.getHeight();
+    }
 
     public void run(IRect bounds) {
         createWindow(bounds);
@@ -58,7 +67,7 @@ public class SkijaWindow implements Window {
     private void updateDimensions() {
         int[] width = new int[1];
         int[] height = new int[1];
-        GLFW. glfwGetFramebufferSize(window, width, height);
+        GLFW.glfwGetFramebufferSize(window, width, height);
 
         float[] xscale = new float[1];
         float[] yscale = new float[1];
@@ -129,21 +138,6 @@ public class SkijaWindow implements Window {
     private double[] times = new double[155];
     private int timesIdx = 0;
 
-    private void draw() {
-        long t1 = System.nanoTime();
-        times[timesIdx] = (t1 - t0) / 1000000.0;
-        t0 = t1;
-        canvas.clear(0xFFFFFFFF);
-        int count = canvas.save();
-        // scenes.get(currentScene).draw(canvas, width, height, dpi, xpos, ypos);
-        canvas.restoreToCount(count);
-        count = canvas.save();
-        canvas.restoreToCount(count);
-        timesIdx = (timesIdx + 1) % times.length;
-        context.flush();
-        GLFW.glfwSwapBuffers(window);
-    }
-
     private void loop() {
         GL.createCapabilities();
         if ("false".equals(System.getProperty("skija.staticLoad")))
@@ -153,7 +147,7 @@ public class SkijaWindow implements Window {
         GLFW.glfwSetWindowSizeCallback(window, (window, width, height) -> {
             updateDimensions();
             initSkia();
-            draw();
+            draw(props);
         });
 
         GLFW.glfwSetCursorPosCallback(window, (window, xpos, ypos) -> {
@@ -168,7 +162,7 @@ public class SkijaWindow implements Window {
 
         initSkia();
         while (!GLFW.glfwWindowShouldClose(window)) {
-            draw();
+            draw(props);
             GLFW.glfwPollEvents();
         }
     }
@@ -190,13 +184,21 @@ public class SkijaWindow implements Window {
 
     @Override
     public Window draw(Props<?> props) {
-        System.out.println("NEW RENDER");
-        props.draw(null);
+        long t1 = System.nanoTime();
+        times[timesIdx] = (t1 - t0) / 1000000.0;
+        t0 = t1;
+        canvas.clear(0xFFFFFFFF);
+        int count = canvas.save();
+        props.draw(new SkijaQuiCanvas(canvas, new Path().addRect(new Rect(0,0, width, height))));
+        canvas.restoreToCount(count);
+        timesIdx = (timesIdx + 1) % times.length;
+        context.flush();
+        GLFW.glfwSwapBuffers(window);
         return this;
     }
 
     @Override
     public void waitUntilClosed() {
-        loop();
+        run(new IRect(xpos, ypos, width, height));
     }
 }

@@ -24,8 +24,8 @@ public class MyMain implements QuarkusApplication {
     public int run(String... args) throws Exception {
         Window window = windowManager.createWindow("My Window");
         window.defaultView(TodoList.class)
-              .todo(Arrays.asList("A", "B", "C"));
-        window.render();
+              .todo(Arrays.asList("Task 1", "A very long task", "A task that \n span multiple lines"));
+        window.waitUntilClosed();
         return 0;
     }
 }

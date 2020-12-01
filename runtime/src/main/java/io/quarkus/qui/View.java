@@ -1,5 +1,9 @@
 package io.quarkus.qui;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -62,5 +66,24 @@ public interface View<T extends Props> {
     @SuppressWarnings("unchecked")
     default <P extends Props> P show(Class<? extends View<P>> view) {
         return (P) ViewManager.INSTANCE.createView(this, view);
+    }
+
+    default <P extends Props, X> List<Props> showItems(Class<? extends View<P>> view, List<X> items, BiFunction<X, P, Props> mapper) {
+        List<Props> out = new ArrayList<>(items.size());
+        for (int i = 0; i < items.size(); i++) {
+            P itemView = (P) ViewManager.INSTANCE.createView(this, view, i);
+            out.add(mapper.apply(items.get(i), itemView));
+        }
+        return out;
+    }
+
+    default <P extends Props, X> List<Props> showItems(Class<? extends View<P>> view, Collection<X> items,
+                                                       Function<X, Object> keyMap, BiFunction<X, P, Props> mapper) {
+        List<Props> out = new ArrayList<>(items.size());
+        for (X item : items) {
+            P itemView = (P) ViewManager.INSTANCE.createView(this, view, keyMap.apply(item));
+            out.add(mapper.apply(item, itemView));
+        }
+        return out;
     }
 }
