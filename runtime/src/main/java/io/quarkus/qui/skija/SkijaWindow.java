@@ -1,11 +1,10 @@
 package io.quarkus.qui.skija;
 
-import java.util.function.Function;
-
 import io.quarkus.qui.Props;
 import io.quarkus.qui.View;
 import io.quarkus.qui.ViewManager;
 import io.quarkus.qui.Window;
+import io.quarkus.qui.devmode.WindowSetup;
 import org.jetbrains.skija.BackendRenderTarget;
 import org.jetbrains.skija.Canvas;
 import org.jetbrains.skija.ColorSpace;
@@ -29,17 +28,26 @@ public class SkijaWindow implements Window {
     public int width;
     public int height;
     public float dpi = 1f;
-    public int xpos = 0;
-    public int ypos = 0;
+    public int mouseXPos = 0;
+    public int mouseYPos = 0;
+    public int windowXPos = 0;
+    public int windowYPos = 0;
     public boolean vsync = true;
     private String os = System.getProperty("os.name").toLowerCase();
     Props<?> props;
+    SkijaWindowManager windowManager;
+    WindowSetup windowSetup;
+    boolean isPropsDirty = true;
+    boolean shouldClose = false;
+    boolean saveWindowState = false;
 
-    public SkijaWindow(IRect bounds) {
-        xpos = bounds.getLeft();
-        ypos = bounds.getTop();
+    public SkijaWindow(SkijaWindowManager windowManager, WindowSetup windowSetup, IRect bounds) {
+        mouseXPos = bounds.getLeft();
+        mouseYPos = bounds.getTop();
         width = bounds.getWidth();
         height = bounds.getHeight();
+        this.windowSetup = windowSetup;
+        this.windowManager = windowManager;
     }
 
     public void run(IRect bounds) {
@@ -50,18 +58,11 @@ public class SkijaWindow implements Window {
         GLFW.glfwDestroyWindow(window);
         GLFW.glfwTerminate();
         GLFW.glfwSetErrorCallback(null).free();
-    }
 
-    private void test() {
-        method(this::done);
-    }
-
-    private void method(Function<SkijaWindow, Integer> setter) {
-
-    }
-
-    private Integer done(SkijaWindow w) {
-        return 1;
+        if (!saveWindowState) {
+            windowSetup.removeWindow(window);
+        }
+        windowManager.removeWindow(window);
     }
 
     private void updateDimensions() {
@@ -77,6 +78,7 @@ public class SkijaWindow implements Window {
         this.width = (int) (width[0] / xscale[0]);
         this.height = (int) (height[0] / yscale[0]);
         this.dpi = xscale[0];
+
         System.out.println("FramebufferSize " + width[0] + "x" + height[0] + ", scale " + this.dpi + ", window " + this.width + "x" + this.height);
     }
 
@@ -97,12 +99,18 @@ public class SkijaWindow implements Window {
 
         GLFW.glfwSetWindowPos(window, bounds.getLeft(), bounds.getTop());
         updateDimensions();
-        xpos = width / 2;
-        ypos = height / 2;
+        mouseXPos = width / 2;
+        mouseYPos = height / 2;
+        windowXPos = bounds.getLeft();
+        windowYPos = bounds.getTop();
 
         GLFW.glfwMakeContextCurrent(window);
         GLFW.glfwSwapInterval(vsync ? 1 : 0); // Enable v-sync
         GLFW.glfwShowWindow(window);
+
+        windowSetup.setBounds(window, bounds);
+        windowSetup.setView(window, view());
+        windowManager.addWindow(window, this);
     }
 
     private DirectContext context;
@@ -148,23 +156,41 @@ public class SkijaWindow implements Window {
             updateDimensions();
             initSkia();
             draw(props);
+            windowSetup.setBounds(window, new IRect(windowXPos, windowYPos,
+                                                    windowXPos + this.width, windowYPos + this.height));
+        });
+
+        GLFW.glfwSetWindowPosCallback(window, (window, x, y) -> {
+            this.windowXPos = x;
+            this.windowYPos = y;
+            windowSetup.setBounds(window, new IRect(windowXPos, windowYPos,
+                                                    windowXPos + width, windowYPos + height));
         });
 
         GLFW.glfwSetCursorPosCallback(window, (window, xpos, ypos) -> {
             if(os.contains("mac") || os.contains("darwin")) {
-                this.xpos = (int) xpos;
-                this.ypos = (int) ypos;
+                this.mouseXPos = (int) xpos;
+                this.mouseYPos = (int) ypos;
             } else {
-                this.xpos = (int) (xpos / dpi);
-                this.ypos = (int) (ypos / dpi);
+                this.mouseXPos = (int) (xpos / dpi);
+                this.mouseYPos = (int) (ypos / dpi);
             }
         });
 
         initSkia();
-        while (!GLFW.glfwWindowShouldClose(window)) {
+        while (!GLFW.glfwWindowShouldClose(window) && !shouldClose) {
             draw(props);
             GLFW.glfwPollEvents();
         }
+    }
+
+    public void close() {
+        close(false);
+    }
+
+    public void close(boolean saveWindowState) {
+        shouldClose = true;
+        this.saveWindowState = saveWindowState;
     }
 
     @Override
@@ -179,6 +205,7 @@ public class SkijaWindow implements Window {
                                                 this,
                                                 viewClass,
                                                 this);
+        isPropsDirty = true;
         return (T) props;
     }
 
@@ -194,11 +221,16 @@ public class SkijaWindow implements Window {
         timesIdx = (timesIdx + 1) % times.length;
         context.flush();
         GLFW.glfwSwapBuffers(window);
+
+        if (isPropsDirty) {
+            windowSetup.setView(window, props);
+            isPropsDirty = false;
+        }
         return this;
     }
 
     @Override
     public void waitUntilClosed() {
-        run(new IRect(xpos, ypos, width, height));
+        run(new IRect(mouseXPos, mouseYPos, width, height));
     }
 }

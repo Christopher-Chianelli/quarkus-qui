@@ -9,6 +9,9 @@ public interface Window {
 
     default Props<?> render() {
         Props props = view();
+        if (props == null) {
+            return null;
+        }
         Props<?> render = props._getView().render(props);
         draw(render);
         ViewManager.INSTANCE.endRender(this);

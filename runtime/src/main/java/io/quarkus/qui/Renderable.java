@@ -1,5 +1,8 @@
 package io.quarkus.qui;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * Do not show this; to render a Renderable is to
  * render itself. The purpose of this class is
@@ -11,6 +14,16 @@ public interface Renderable extends Props, View {
     @Override
     default Props _reset() {
         return this;
+    }
+
+    @Override
+    default Map<String, String> _getAsMap() {
+        return Collections.emptyMap();
+    }
+
+    @Override
+    default void _setAsMap(Map propValues) {
+        // Do nothing
     }
 
     @Override

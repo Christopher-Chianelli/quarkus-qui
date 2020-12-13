@@ -1,6 +1,7 @@
 package io.quarkus.qui;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -36,6 +37,22 @@ public interface Props<T extends Props<T>> {
      * was last set with __GET_VALUE__.
      */
     <V> V _get();
+
+    /**
+     * Implementation detail. Do not use.
+     *
+     * Get this props' values as a map.
+     * Use for devmode hot reloading
+     */
+    Map<String, String> _getAsMap();
+
+    /**
+     * Implementation detail. Do not use.
+     *
+     * Sets this props' values from a map.
+     * Use for devmode hot reloading
+     */
+    void _setAsMap(Map propValues);
 
     /**
      * Implementation detail. Do not use.

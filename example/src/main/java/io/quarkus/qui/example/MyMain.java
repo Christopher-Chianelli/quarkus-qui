@@ -25,7 +25,7 @@ public class MyMain implements QuarkusApplication {
         Window window = windowManager.createWindow("My Window");
         window.defaultView(TodoList.class)
               .todo(Arrays.asList("Task 1", "A very long task", "A task that \n span multiple lines"));
-        window.waitUntilClosed();
+        windowManager.waitUntilAllWindowsAreClosed();
         return 0;
     }
 }

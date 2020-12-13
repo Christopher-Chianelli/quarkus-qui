@@ -20,4 +20,13 @@ public interface WindowManager {
      * the window was showing.
      */
     Window createWindow(String title);
+
+    void waitUntilAllWindowsAreClosed();
+
+    /**
+     * Dev mode implementation detail. Do not use.
+     *
+     * Called when a file changed
+     */
+    void _onFileChange();
 }
