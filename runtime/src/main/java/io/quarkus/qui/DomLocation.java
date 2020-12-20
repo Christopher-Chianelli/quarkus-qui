@@ -1,6 +1,8 @@
 package io.quarkus.qui;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Represent a path in bytecode that creates a view.
@@ -9,7 +11,7 @@ import java.util.Objects;
 public final class DomLocation {
     final DomLocation parent;
     final Object key;
-    final int bytecodeLocation;
+    final List<BytecodeLocation> bytecodeLocation;
 
     public DomLocation(Object key, Class<?> callerClass) {
         this(null, key, callerClass);
@@ -22,10 +24,14 @@ public final class DomLocation {
         this.key = key;
         this.bytecodeLocation = StackWalker.getInstance()
                 .walk(stackFrameStream -> stackFrameStream
-                        .filter(st -> st.getClassName().equals(callerClass.getTypeName()))
-                        .findFirst()
-                        .map(StackWalker.StackFrame::getByteCodeIndex)
-                        .orElseThrow());
+                        .dropWhile(stackFrame -> !View.class.getName().equals(stackFrame.getClassName()))
+                        .skip(1)
+                        .takeWhile(stackFrame ->
+                            callerClass.getName().equals(stackFrame.getClassName()) &&
+                                "render".equals(stackFrame.getMethodName())
+                        )
+                        .map(BytecodeLocation::new)
+                        .collect(Collectors.toList()));
     }
 
     @Override
@@ -37,9 +43,7 @@ public final class DomLocation {
             return false;
         }
         DomLocation that = (DomLocation) o;
-        return bytecodeLocation == that.bytecodeLocation &&
-                Objects.equals(parent, that.parent) &&
-                Objects.equals(key, that.key);
+        return Objects.equals(parent, that.parent) && Objects.equals(key, that.key) && bytecodeLocation.equals(that.bytecodeLocation);
     }
 
     @Override
@@ -49,8 +53,41 @@ public final class DomLocation {
 
     @Override
     public String toString() {
-        String prefix = (parent != null)? parent.toString() : " > ";
+        String prefix = (parent != null)? parent.toString() : " < ";
         String suffix = (key != null)? "[" + key + "]" : "";
-        return prefix + bytecodeLocation + suffix;
+        return bytecodeLocation.stream()
+                .map(bytecodeLocation -> bytecodeLocation.className + ":" +
+                        bytecodeLocation.methodName + ":" +
+                        bytecodeLocation.bytecodeLocationInClassFile)
+                .collect(Collectors.joining(" < ", prefix, suffix));
+    }
+
+    private static final class BytecodeLocation {
+        private final String className;
+        private final String methodName;
+        private final int bytecodeLocationInClassFile;
+
+        public BytecodeLocation(StackWalker.StackFrame stackFrame) {
+            this.className = stackFrame.getClassName();
+            this.methodName = stackFrame.getMethodName();
+            this.bytecodeLocationInClassFile = stackFrame.getByteCodeIndex();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            BytecodeLocation that = (BytecodeLocation) o;
+            return bytecodeLocationInClassFile == that.bytecodeLocationInClassFile && className.equals(that.className) && methodName.equals(that.methodName);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(className, methodName, bytecodeLocationInClassFile);
+        }
     }
 }

@@ -1,5 +1,7 @@
 package io.quarkus.qui.skija;
 
+import java.time.Duration;
+
 import io.quarkus.qui.Props;
 import io.quarkus.qui.View;
 import io.quarkus.qui.ViewManager;
@@ -143,7 +145,7 @@ public class SkijaWindow implements Window {
     }
 
     private long t0;
-    private double[] times = new double[155];
+    private long[] times = new long[155];
     private int timesIdx = 0;
 
     private void loop() {
@@ -212,7 +214,7 @@ public class SkijaWindow implements Window {
     @Override
     public Window draw(Props<?> props) {
         long t1 = System.nanoTime();
-        times[timesIdx] = (t1 - t0) / 1000000.0;
+        times[timesIdx] = (t1 - t0);
         t0 = t1;
         canvas.clear(0xFFFFFFFF);
         int count = canvas.save();
@@ -226,6 +228,8 @@ public class SkijaWindow implements Window {
             windowSetup.setView(window, props);
             isPropsDirty = false;
         }
+
+
         return this;
     }
 
