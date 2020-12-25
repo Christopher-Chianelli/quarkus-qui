@@ -1,5 +1,6 @@
 package io.quarkus.qui;
 
+import java.awt.Graphics2D;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -30,6 +31,6 @@ public interface QuiCanvas {
     default QuiCanvas getSubcanvas(Rect rect) {
         return getSubcanvas(new Path().addRect(rect));
     }
-    void drawInsideBoundary(BiConsumer<Path, Canvas> drawer);
-    void drawBoundary(BiConsumer<Path, Canvas> drawer);
+    void drawInsideBoundary(BiConsumer<Path, Graphics2D> drawer);
+    void drawBoundary(BiConsumer<Path, Graphics2D> drawer);
 }

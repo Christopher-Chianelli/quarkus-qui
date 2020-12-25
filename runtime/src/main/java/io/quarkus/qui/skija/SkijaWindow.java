@@ -229,8 +229,13 @@ public class SkijaWindow implements Window {
             isPropsDirty = false;
         }
 
-
         return this;
+    }
+
+    public long getFPS() {
+        int lastIdx = (times.length + timesIdx - 1) % times.length;
+        Duration nanoDuration = Duration.ofNanos(times[timesIdx] - times[lastIdx]);
+        return Duration.ofSeconds(1).dividedBy(nanoDuration);
     }
 
     @Override

@@ -1,9 +1,11 @@
 package io.quarkus.qui.skija;
 
+import java.awt.Graphics2D;
 import java.util.function.BiConsumer;
 
 import io.quarkus.qui.QuiCanvas;
 import org.jetbrains.skija.Canvas;
+import org.jetbrains.skija.Font;
 import org.jetbrains.skija.Matrix33;
 import org.jetbrains.skija.Path;
 import org.jetbrains.skija.Rect;
@@ -39,7 +41,7 @@ public class SkijaQuiCanvas implements QuiCanvas {
     }
 
     @Override
-    public void drawInsideBoundary(BiConsumer<Path, Canvas> drawer) {
+    public void drawInsideBoundary(BiConsumer<Path, Graphics2D> drawer) {
         if (bounds.isRect() != null) {
             // It is a rectangle, so it inner boundary
             // the same as its outer boundary
@@ -122,10 +124,11 @@ public class SkijaQuiCanvas implements QuiCanvas {
     }
 
     @Override
-    public void drawBoundary(BiConsumer<Path, Canvas> drawer) {
+    public void drawBoundary(BiConsumer<Path, Graphics2D> drawer) {
         int saveCount = canvas.save();
         canvas.setMatrix(transformMatrix);
-        drawer.accept(bounds, canvas);
+        drawer.accept(bounds, new SkijaGraphics2D(canvas, "", transformMatrix,
+                                                  bounds, null, null));
         canvas.restoreToCount(saveCount);
     }
 }
