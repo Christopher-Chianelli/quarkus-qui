@@ -20,6 +20,9 @@ public class SkijaShape implements Shape {
     Path path;
 
     public SkijaShape(Path path) {
+        if (path == null) {
+            path = new Path();
+        }
         this.path = path;
     }
 

@@ -17,6 +17,21 @@ import org.jetbrains.skija.Shader;
 public class PaintUtils {
     private PaintUtils() {}
 
+    public static void clonePaint(Paint src, Paint dst) {
+          dst.setShader(src.getShader())
+             .setColor(src.getColor())
+             .setStrokeCap(src.getStrokeCap())
+             .setImageFilter(src.getImageFilter())
+             .setPathEffect(src.getPathEffect())
+             .setStrokeJoin(src.getStrokeJoin())
+             .setStrokeMiter(src.getStrokeMiter())
+             .setMode(src.getMode())
+             .setAntiAlias(src.isAntiAlias())
+             .setBlendMode(src.getBlendMode())
+             .setFilterQuality(src.getFilterQuality())
+             .setMaskFilter(src.getMaskFilter());
+    }
+
     public static void setSkijaPaintPropertiesFromAWTPaint(Paint paint, java.awt.Paint awtPaint) {
         if (awtPaint instanceof Color) {
             setSkijaPaintPropertiesFromColor(paint, (Color) awtPaint);

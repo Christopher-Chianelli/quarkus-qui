@@ -16,6 +16,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.swing.plaf.basic.BasicTextUI;
+import javax.swing.text.PlainView;
+
 import org.jetbrains.skija.Bitmap;
 import org.jetbrains.skija.BlendMode;
 import org.jetbrains.skija.Canvas;
@@ -61,6 +64,29 @@ public class SkijaGraphics2D extends Graphics2D {
         this.clip = clip;
         this.font = font;
         this.skiaFont = skiaFont;
+    }
+
+    public SkijaGraphics2D(SkijaGraphics2D orig) {
+        this.prevMatrix = orig.prevMatrix;
+        this.prevClip = orig.prevClip;
+
+        this.color = orig.color;
+        this.backgroundColor = orig.backgroundColor;
+        this.font = orig.font;
+        this.skiaFont = orig.skiaFont;
+
+        this.canvas = orig.canvas;
+        this.renderingHints.putAll(orig.renderingHints);
+
+        this.awtPaint = orig.awtPaint;
+        this.stroke = orig.stroke;
+        this.matrix = orig.matrix;
+
+        PaintUtils.clonePaint(orig.paint, paint);
+        PaintUtils.clonePaint(orig.backgroundPaint, backgroundPaint);
+
+        // Do NOT clone the clip; it causes rendering issues
+        this.clip = null;
     }
 
     private static Path getPathFromShape(Shape shape) {
@@ -384,7 +410,7 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public java.awt.Graphics create() {
-        return new SkijaGraphics2D(canvas, matrix, clip, font, skiaFont);
+        return new SkijaGraphics2D(this);
     }
 
     @Override
@@ -473,7 +499,7 @@ public class SkijaGraphics2D extends Graphics2D {
     @Override
     public java.awt.Rectangle getClipBounds() {
         if (clip == null) {
-            return null;
+            return new Rectangle(Integer.MAX_VALUE, Integer.MAX_VALUE);
         }
         IRect bounds = clip.getBounds().toIRect();
         return new Rectangle(bounds.getLeft(), bounds.getTop(), bounds.getWidth(), bounds.getHeight());
