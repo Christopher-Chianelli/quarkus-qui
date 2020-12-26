@@ -1,4 +1,4 @@
-package io.quarkus.qui.skija;
+package io.quarkus.qui.skija.awt;
 
 import java.awt.Rectangle;
 import java.awt.Shape;

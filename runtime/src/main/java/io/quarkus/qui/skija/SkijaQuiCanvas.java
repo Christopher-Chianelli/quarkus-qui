@@ -4,8 +4,8 @@ import java.awt.Graphics2D;
 import java.util.function.BiConsumer;
 
 import io.quarkus.qui.QuiCanvas;
+import io.quarkus.qui.skija.awt.SkijaGraphics2D;
 import org.jetbrains.skija.Canvas;
-import org.jetbrains.skija.Font;
 import org.jetbrains.skija.Matrix33;
 import org.jetbrains.skija.Path;
 import org.jetbrains.skija.Rect;
@@ -127,7 +127,7 @@ public class SkijaQuiCanvas implements QuiCanvas {
     public void drawBoundary(BiConsumer<Path, Graphics2D> drawer) {
         int saveCount = canvas.save();
         canvas.setMatrix(transformMatrix);
-        drawer.accept(bounds, new SkijaGraphics2D(canvas, "", transformMatrix,
+        drawer.accept(bounds, new SkijaGraphics2D(canvas, transformMatrix,
                                                   bounds, null, null));
         canvas.restoreToCount(saveCount);
     }

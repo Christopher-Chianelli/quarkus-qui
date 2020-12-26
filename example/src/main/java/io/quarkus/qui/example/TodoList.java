@@ -2,8 +2,10 @@ package io.quarkus.qui.example;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.LayoutManager;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -27,14 +29,18 @@ public class TodoList implements View<TodoList.TodoListProps> {
         TodoListProps todo(List<String> tasks);
     }
 
-    private Component content;
+    private JPanel content;
 
     @PostConstruct
     void setContent() {
-        content = new JTextField();
-        // content.setForeground(Color.WHITE);
-        // content.setBackground(Color.BLACK);
-        content.setSize(100, 100);
+        content = new JPanel();
+        content.setLayout(new FlowLayout());
+        content.add(new JButton("Hello"));
+        content.add(new JButton("How"));
+        content.add(new JButton("Are"));
+        content.add(new JButton("You?"));
+        content.setForeground(Color.WHITE);
+        content.setBackground(Color.BLACK);
     }
 
     @Override

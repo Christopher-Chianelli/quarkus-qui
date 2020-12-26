@@ -1,19 +1,17 @@
-package io.quarkus.qui.skija;
+package io.quarkus.qui.skija.awt;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.FontMetrics;
-import java.awt.GradientPaint;
 import java.awt.Graphics2D;
-import java.awt.RadialGradientPaint;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.Shape;
-import java.awt.TexturePaint;
+import java.awt.Stroke;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.RoundRectangle2D;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,23 +19,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jetbrains.skija.Bitmap;
 import org.jetbrains.skija.BlendMode;
 import org.jetbrains.skija.Canvas;
-import org.jetbrains.skija.FilterTileMode;
 import org.jetbrains.skija.Font;
 import org.jetbrains.skija.FontEdging;
 import org.jetbrains.skija.FontMgr;
 import org.jetbrains.skija.FontStyle;
-import org.jetbrains.skija.GradientStyle;
 import org.jetbrains.skija.IRect;
 import org.jetbrains.skija.Matrix33;
 import org.jetbrains.skija.Paint;
 import org.jetbrains.skija.PaintMode;
 import org.jetbrains.skija.PaintStrokeCap;
-import org.jetbrains.skija.PaintStrokeJoin;
 import org.jetbrains.skija.Path;
-import org.jetbrains.skija.PathEffect;
 import org.jetbrains.skija.PathOp;
 import org.jetbrains.skija.Rect;
-import org.jetbrains.skija.Shader;
 import org.jetbrains.skija.Typeface;
 
 public class SkijaGraphics2D extends Graphics2D {
@@ -54,15 +47,16 @@ public class SkijaGraphics2D extends Graphics2D {
 
     public final Canvas canvas;
     public final Paint paint = new Paint().setColor(0xFFFFFFFF).setStrokeWidth(1).setStrokeCap(PaintStrokeCap.SQUARE);
+    private final RenderingHints renderingHints = new RenderingHints(null);
+    private java.awt.Paint awtPaint = Color.WHITE;
+    private Stroke stroke = new BasicStroke();
     public final Paint backgroundPaint = new Paint().setColor(0xFF000000);
     public Matrix33 matrix;
-    public final String indent;
 
-    public SkijaGraphics2D(Canvas canvas) { this(canvas, "", Matrix33.IDENTITY, null, null, null); }
+    public SkijaGraphics2D(Canvas canvas) { this(canvas, Matrix33.IDENTITY, null, null, null); }
 
-    public SkijaGraphics2D(Canvas canvas, String indent, Matrix33 matrix, Path clip, java.awt.Font font, Font skiaFont) {
+    public SkijaGraphics2D(Canvas canvas, Matrix33 matrix, Path clip, java.awt.Font font, Font skiaFont) {
         this.canvas = canvas;
-        this.indent = indent;
         this.matrix = matrix;
         this.clip = clip;
         this.font = font;
@@ -89,40 +83,42 @@ public class SkijaGraphics2D extends Graphics2D {
         }
     }
 
-    public void log(String format, Object... args) {
-        // System.out.println(indent + String.format(format, args));
+    private void stroke(Runnable stroker) {
+        beforeDraw();
+        paint.setMode(PaintMode.STROKE);
+        stroker.run();
+    }
+
+    private void fill(Runnable filler) {
+        beforeDraw();
+        paint.setMode(PaintMode.FILL);
+        filler.run();
     }
 
     @Override
     public void draw(java.awt.Shape s) {
-        log("draw");
-        paint.setMode(PaintMode.STROKE);
-        canvas.drawPath(getPathFromShape(s), paint);
-        paint.setMode(PaintMode.FILL);
+        stroke(() -> canvas.drawPath(getPathFromShape(s), paint));
     }
 
     @Override
     public boolean drawImage(java.awt.Image img, java.awt.geom.AffineTransform xform, java.awt.image.ImageObserver obs) {
-        log("drawImage");
+        // TODO
         return false;
     }
 
     @Override
     public void drawImage(java.awt.image.BufferedImage img, java.awt.image.BufferedImageOp op, int x, int y) {
-        log("drawImage");
-
+        // TODO
     }
 
     @Override
     public void drawRenderedImage(java.awt.image.RenderedImage img, java.awt.geom.AffineTransform xform) {
-        log("drawRenderedImage");
-
+        // TODO
     }
 
     @Override
     public void drawRenderableImage(java.awt.image.renderable.RenderableImage img, java.awt.geom.AffineTransform xform) {
-        log("drawRenderableImage");
-
+        // TODO
     }
 
     @Override
@@ -132,7 +128,6 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void drawString(String str, float x, float y) {
-        log("[+] drawString");
         if (font == null)
             setFont(defaultFont);
         beforeDraw();
@@ -141,32 +136,26 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void drawString(java.text.AttributedCharacterIterator iterator, int x, int y) {
-        log("drawString");
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
     public void drawString(java.text.AttributedCharacterIterator iterator, float x, float y) {
-        log("drawString");
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
     public void drawGlyphVector(java.awt.font.GlyphVector g, float x, float y) {
-        log("drawGlyphVector");
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
     public void fill(java.awt.Shape s) {
-        log("[+] fill " + s);
-        beforeDraw();
-        canvas.drawPath(getPathFromShape(s), paint);
+        fill(() -> canvas.drawPath(getPathFromShape(s), paint));
     }
 
     @Override
     public boolean hit(java.awt.Rectangle rect, java.awt.Shape s, boolean onStroke) {
-        log("hit");
         Path intersection = Path.makeCombining(getPathFromShape(rect), getPathFromShape(s),
                                                PathOp.INTERSECT);
         if (intersection == null) {
@@ -178,13 +167,12 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public java.awt.GraphicsConfiguration getDeviceConfiguration() {
-        log("[+] getDeviceConfiguration");
         return SkijaGraphicsConfig.INSTANCE;
     }
 
     @Override
     public void setComposite(java.awt.Composite comp) {
-        log("[/] setComposite " + comp);
+        // TODO ?
         if (comp == java.awt.AlphaComposite.Clear) {
             paint.setBlendMode(BlendMode.CLEAR);
         }
@@ -198,173 +186,40 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void setPaint(java.awt.Paint paint) {
-        if (paint instanceof java.awt.Color) {
-            setColor((java.awt.Color) paint);
-        }
-        else if (paint instanceof java.awt.LinearGradientPaint) {
-            var gr = (java.awt.LinearGradientPaint) paint;
-
-            int[] colors = new int[gr.getColors().length];
-            for (int i = 0; i < colors.length; ++i) {
-                colors[i] = gr.getColors()[i].getRGB();
-            }
-
-            log("[+] setPaint " + gr.getStartPoint() + " " + gr.getEndPoint() + " " + Arrays.toString(colors) + " " + Arrays.toString(gr.getFractions()));
-
-            var shader = Shader.makeLinearGradient((float) gr.getStartPoint().getX(),
-                                                   (float) gr.getStartPoint().getY(),
-                                                   (float) gr.getEndPoint().getX(),
-                                                   (float) gr.getEndPoint().getY(),
-                                                   colors,
-                                                   gr.getFractions());
-            this.paint.setShader(shader);
-        } else if (paint instanceof GradientPaint) {
-            GradientPaint gradientPaint = (GradientPaint) paint;
-            Shader shader;
-
-            if (gradientPaint.isCyclic()) {
-                shader = Shader.makeLinearGradient(
-                        PointUtils.toSkijaPoint(gradientPaint.getPoint1()),
-                        PointUtils.toSkijaPoint(gradientPaint.getPoint2()),
-                        new int[] {
-                                gradientPaint.getColor1().getRGB(),
-                                gradientPaint.getColor2().getRGB()
-                        },
-                        new float[] {0, 1},
-                        new GradientStyle(FilterTileMode.MIRROR, true, Matrix33.IDENTITY)
-                );
-            } else {
-                shader = Shader.makeLinearGradient(
-                        PointUtils.toSkijaPoint(gradientPaint.getPoint1()),
-                        PointUtils.toSkijaPoint(gradientPaint.getPoint2()),
-                        new int[] {
-                                gradientPaint.getColor1().getRGB(),
-                                gradientPaint.getColor2().getRGB()
-                        },
-                        new float[] {0, 1},
-                        new GradientStyle(FilterTileMode.CLAMP, true, Matrix33.IDENTITY)
-                );
-            }
-            this.paint.setShader(shader);
-        }
-        else if (paint instanceof RadialGradientPaint) {
-            RadialGradientPaint radialGradientPaint = (RadialGradientPaint) paint;
-            GradientStyle gradientStyle;
-            switch (radialGradientPaint.getCycleMethod()) {
-                case NO_CYCLE:
-                    gradientStyle = new GradientStyle(FilterTileMode.CLAMP, true, AffineTransformUtils.getMatrix33FromAffineTransform(radialGradientPaint.getTransform()));
-                    break;
-                case REFLECT:
-                    gradientStyle = new GradientStyle(FilterTileMode.MIRROR, true, AffineTransformUtils.getMatrix33FromAffineTransform(radialGradientPaint.getTransform()));
-                    break;
-                case REPEAT:
-                    gradientStyle = new GradientStyle(FilterTileMode.REPEAT, true, AffineTransformUtils.getMatrix33FromAffineTransform(radialGradientPaint.getTransform()));
-                    break;
-
-                default:
-                    throw new IllegalStateException();
-            }
-            Shader shader = Shader.makeRadialGradient(PointUtils.toSkijaPoint(radialGradientPaint.getCenterPoint()),
-                                                      radialGradientPaint.getRadius(),
-                                                      Arrays.stream(radialGradientPaint.getColors()).mapToInt(Color::getRGB)
-                                                              .toArray(),
-                                                      radialGradientPaint.getFractions(),
-                                                      gradientStyle
-            );
-            this.paint.setShader(shader);
-        } else if (paint instanceof TexturePaint) {
-            TexturePaint texturePaint = (TexturePaint) paint;
-            Bitmap bitmap = skBitmap(texturePaint.getImage());
-            float scaleX = (float) (texturePaint.getImage().getWidth() / texturePaint.getAnchorRect().getWidth());
-            float scaleY = (float) (texturePaint.getImage().getHeight() / texturePaint.getAnchorRect().getHeight());
-            float dx = (float) texturePaint.getAnchorRect().getX();
-            float dy = (float) texturePaint.getAnchorRect().getY();
-            Matrix33 localMatrix = Matrix33.makeTranslate(dx, dy).makePreScale(scaleX, scaleY);
-            Shader shader = bitmap.makeShader(FilterTileMode.REPEAT, FilterTileMode.REPEAT, localMatrix);
-            this.paint.setShader(shader);
-        }
-        else {
-            throw new UnsupportedOperationException("setPaint " + paint);
-        }
+        PaintUtils.setSkijaPaintPropertiesFromAWTPaint(this.paint, paint);
+        awtPaint = paint;
     }
 
     @Override
     public void setStroke(java.awt.Stroke s) {
-        if (s instanceof java.awt.BasicStroke) {
-            var ss = (java.awt.BasicStroke) s;
-            log("[+] setStroke " + ss);
-            paint.setStrokeWidth(ss.getLineWidth());
-            paint.setStrokeMiter(ss.getMiterLimit());
-            switch (ss.getEndCap()) {
-                case BasicStroke.CAP_BUTT:
-                    paint.setStrokeCap(PaintStrokeCap.BUTT);
-                    break;
-
-                case BasicStroke.CAP_ROUND:
-                    paint.setStrokeCap(PaintStrokeCap.ROUND);
-                    break;
-
-                case BasicStroke.CAP_SQUARE:
-                    paint.setStrokeCap(PaintStrokeCap.SQUARE);
-                    break;
-
-                default:
-                    throw new IllegalArgumentException();
-            }
-
-            switch (ss.getLineJoin()) {
-                case BasicStroke.JOIN_MITER:
-                    paint.setStrokeJoin(PaintStrokeJoin.MITER);
-                    break;
-
-                case BasicStroke.JOIN_ROUND:
-                    paint.setStrokeJoin(PaintStrokeJoin.ROUND);
-                    break;
-
-                case BasicStroke.JOIN_BEVEL:
-                    paint.setStrokeJoin(PaintStrokeJoin.BEVEL);
-                    break;
-
-                default:
-                    throw new IllegalArgumentException();
-            }
-
-            if (ss.getDashArray() != null) {
-                paint.setPathEffect(PathEffect.makeDash(ss.getDashArray(), ss.getDashPhase()));
-            }
-        } else {
-            throw new UnsupportedOperationException("setStroke " + s);
-        }
+        StrokeUtils.setPaintPropertiesFromStroke(paint, s);
+        stroke = s;
     }
 
     @Override
-    public void setRenderingHint(java.awt.RenderingHints.Key hintKey, Object hintValue) {
-        log("setRenderingHint " + hintKey + "=" + hintValue);
-
+    public void setRenderingHint(RenderingHints.Key hintKey, Object hintValue) {
+        renderingHints.put(hintKey, hintValue);
     }
 
     @Override
     public Object getRenderingHint(java.awt.RenderingHints.Key hintKey) {
-        log("getRenderingHint " + hintKey);
-        return null;
+        return renderingHints.get(hintKey);
     }
 
     @Override
     public void setRenderingHints(Map<?, ?> hints) {
-        log("setRenderingHints");
-
+        renderingHints.clear();
+        renderingHints.putAll(hints);
     }
 
     @Override
     public void addRenderingHints(Map<?, ?> hints) {
-        log("addRenderingHints");
-
+        renderingHints.putAll(hints);
     }
 
     @Override
     public java.awt.RenderingHints getRenderingHints() {
-        log("getRenderingHints");
-        return null;
+        return renderingHints;
     }
 
     @Override
@@ -374,7 +229,6 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void translate(double tx, double ty) {
-        log("[+] translate %f, %f", tx, ty);
         matrix = matrix.makeConcat(Matrix33.makeTranslate((float) tx, (float) ty));
         if (clip != null) {
             Path newClip = new Path();
@@ -385,7 +239,6 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void rotate(double theta) {
-        log("rotate " + theta );
         double degrees = Math.toDegrees(theta);
         matrix = matrix.makeConcat(Matrix33.makeRotate((float) degrees));
         if (clip != null) {
@@ -397,7 +250,6 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void rotate(double theta, double x, double y) {
-        log("rotate");
         double degrees = Math.toDegrees(theta);
         matrix = matrix.makeConcat(Matrix33.makeTranslate((float) x, (float) y))
                        .makeConcat(Matrix33.makeRotate((float) degrees))
@@ -414,7 +266,6 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void scale(double sx, double sy) {
-        log("scale");
         matrix = matrix.makeConcat(Matrix33.makeScale((float) sx, (float) sy));
         if (clip != null) {
             Path newClip = new Path();
@@ -425,7 +276,6 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void shear(double shx, double shy) {
-        log("shear");
         matrix = matrix.makeConcat(Matrix33.makeSkew((float) shx, (float) shy));
         if (clip != null) {
             Path newClip = new Path();
@@ -436,7 +286,6 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void transform(java.awt.geom.AffineTransform Tx) {
-        log("transform");
         Matrix33 transformMatrix = AffineTransformUtils.getMatrix33FromAffineTransform(Tx);
         matrix = matrix.makeConcat(transformMatrix);
         if (clip != null && Tx.getDeterminant() != 0) {
@@ -453,7 +302,6 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void setTransform(java.awt.geom.AffineTransform Tx) {
-        log("setTransform");
         Matrix33 transformMatrix = AffineTransformUtils.getMatrix33FromAffineTransform(Tx);
         AffineTransform currentTransformAsAffine = AffineTransformUtils.getAffineTransformFromMatrix33(matrix);
 
@@ -480,50 +328,43 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public java.awt.geom.AffineTransform getTransform() {
-        log("getTransform");
         float[] parts = matrix.getMat();
         return new AffineTransform(parts[0], parts[2], parts[1], parts[3], parts[4], parts[5]);
     }
 
     @Override
     public java.awt.Paint getPaint() {
-        log("getPaint");
-        return null;
+        return awtPaint;
     }
 
     @Override
     public java.awt.Composite getComposite() {
-        log("getComposite");
+        // TODO
         return null;
     }
 
     @Override
     public void setBackground(java.awt.Color color) {
-        log("[+] setBackground " + color);
         this.backgroundColor = color;
         backgroundPaint.setColor(color.getRGB());
     }
 
     @Override
     public java.awt.Color getBackground() {
-        log("[+] getBackground");
         return backgroundColor;
     }
 
     @Override
     public java.awt.Stroke getStroke() {
-        log("getStroke");
-        return null;
+        return stroke;
     }
 
     @Override
     public void clip(java.awt.Shape s) {
         if (s instanceof java.awt.Rectangle) {
-            log("[+] clip " + s);
             var r = (java.awt.Rectangle) s;
             clipRect(r.x, r.y, r.width, r.height);
         } else {
-            log("clip " + s);
             if (clip != null) {
                 Path shapePath = getPathFromShape(s);
                 Path newClip = Path.makeCombining(clip, shapePath, PathOp.INTERSECT);
@@ -536,7 +377,6 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public java.awt.font.FontRenderContext getFontRenderContext() {
-        log("getFontRenderContext");
         return new FontRenderContext(AffineTransformUtils.getAffineTransformFromMatrix33(matrix),
                                      skiaFont.getEdging() != FontEdging.ALIAS,
                                      skiaFont.isSubpixel());
@@ -544,39 +384,35 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public java.awt.Graphics create() {
-        log("[+] create");
-        return new SkijaGraphics2D(canvas, indent + "  ", matrix, clip, font, skiaFont);
+        return new SkijaGraphics2D(canvas, matrix, clip, font, skiaFont);
     }
 
     @Override
     public java.awt.Color getColor() {
-        log("[+] getColor");
         return color;
     }
 
     @Override
     public void setColor(java.awt.Color c) {
-        log("[+] setColor " + c);
         this.color = c;
         paint.setColor(c == null ? 0xFFFFFFFF : c.getRGB());
         paint.setShader(null);
+        awtPaint = c;
     }
 
     @Override
     public void setPaintMode() {
-        log("setPaintMode");
-
+        // TODO
     }
 
     @Override
     public void setXORMode(java.awt.Color c1) {
-        log("setXORMode");
+        // TODO
         throw new UnsupportedOperationException();
     }
 
     @Override
     public java.awt.Font getFont() {
-        log("[+] getFont");
         if (font == null)
             setFont(defaultFont);
         return font;
@@ -584,7 +420,6 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void setFont(java.awt.Font font) {
-        log("[+] setFont " + font);
         if (this.font != font) {
             this.font = font;
 
@@ -627,7 +462,6 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public java.awt.FontMetrics getFontMetrics(java.awt.Font f) {
-        log("getFontMetrics");
         return new FontMetrics(f) {
             @Override
             public java.awt.Font getFont() {
@@ -638,7 +472,6 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public java.awt.Rectangle getClipBounds() {
-        log("[+] getClipBounds => " + clip);
         if (clip == null) {
             return null;
         }
@@ -648,7 +481,6 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void clipRect(int x, int y, int width, int height) {
-        log("[+] clipRect %d %d %d %d", x, y, width, height);
         if (clip == null) {
             setClip(x, y, width, height);
         }
@@ -660,13 +492,11 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void setClip(int x, int y, int width, int height) {
-        log("[+] setClip %d %d %d %d", x, y, width, height);
         clip = getPathFromShape(new java.awt.Rectangle(x, y, width, height));
     }
 
     @Override
     public java.awt.Shape getClip() {
-        log("[+] getClip => " + clip);
         return new SkijaShape(clip);
     }
 
@@ -681,7 +511,6 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void copyArea(int x, int y, int width, int height, int dx, int dy) {
-        log("copyArea");
         Bitmap copiedArea = new Bitmap();
         copiedArea.allocN32Pixels(width, height);
         canvas.readPixels(copiedArea, x, y);
@@ -690,110 +519,96 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void drawLine(int x1, int y1, int x2, int y2) {
-        log("[+] drawLine %d, %d -> %d, %d", x1, y1, x2, y2);
         beforeDraw();
-        canvas.drawLine(x1, y1, x2, y2, paint);
+        fill(() -> canvas.drawLine(x1, y1, x2, y2, paint));
     }
 
     @Override
     public void fillRect(int x, int y, int width, int height) {
-        log("[+] fillRect %d, %d, %d, %d", x, y, width, height);
         beforeDraw();
-        canvas.drawRect(Rect.makeXYWH(x, y, width, height), paint);
+        fill(() -> canvas.drawRect(Rect.makeXYWH(x, y, width, height), paint));
     }
 
     @Override
     public void clearRect(int x, int y, int width, int height) {
-        log("clearRect %d, %d, %d, %d", x, y, width, height);
         beforeDraw();
-        canvas.drawRect(Rect.makeXYWH(x,y, width, height),
+        fill(() -> canvas.drawRect(Rect.makeXYWH(x,y, width, height),
                         new Paint()
                                 .setMode(PaintMode.FILL)
-                                .setColor(backgroundColor.getRGB()));
+                                .setColor(backgroundColor.getRGB())));
     }
 
     @Override
     public void drawRoundRect(int x, int y, int width, int height, int arcWidth, int arcHeight) {
-        log("drawRoundRect");
         draw(new RoundRectangle2D.Float(x, y, width, height, arcWidth, arcHeight));
     }
 
     @Override
     public void fillRoundRect(int x, int y, int width, int height, int arcWidth, int arcHeight) {
-        log("fillRoundRect");
         fill(new RoundRectangle2D.Float(x, y, width, height, arcWidth, arcHeight));
     }
 
     @Override
     public void drawOval(int x, int y, int width, int height) {
-        log("drawOval");
-        paint.setMode(PaintMode.STROKE);
-        canvas.drawOval(Rect.makeXYWH(x, y, width, height), paint);
-        paint.setMode(PaintMode.FILL);
+        stroke(() -> canvas.drawOval(Rect.makeXYWH(x, y, width, height), paint));
     }
 
     @Override
     public void fillOval(int x, int y, int width, int height) {
-        log("[+] fillOval");
-        canvas.drawOval(Rect.makeXYWH(x, y, width, height), paint);
+        fill(() -> canvas.drawOval(Rect.makeXYWH(x, y, width, height), paint));
     }
 
     @Override
     public void drawArc(int x, int y, int width, int height, int startAngle, int arcAngle) {
-        log("[+] drawArc");
-        paint.setMode(PaintMode.STROKE);
-        canvas.drawArc(x, y, width, height, startAngle, arcAngle, false, paint);
-        paint.setMode(PaintMode.FILL);
+        stroke(() -> canvas.drawArc(x, y, width, height, startAngle, arcAngle, false, paint));
     }
 
     @Override
     public void fillArc(int x, int y, int width, int height, int startAngle, int arcAngle) {
-        log("[+] fillArc");
-        canvas.drawArc(x, y, width, height, startAngle, arcAngle, false, paint);
+        fill(() -> canvas.drawArc(x, y, width, height, startAngle, arcAngle, false, paint));
     }
 
     @Override
     public void drawPolyline(int[] xPoints, int[] yPoints, int nPoints) {
-        log("drawPolyline");
-        beforeDraw();
-        paint.setMode(PaintMode.STROKE);
-        try (var path = new Path()) {
-            path.moveTo(xPoints[0], yPoints[0]);
-            for (int i = 1; i < nPoints; ++i)
-                path.lineTo(xPoints[i], yPoints[i]);
-            canvas.drawPath(path, paint);
-        }
-        paint.setMode(PaintMode.FILL);
+        stroke(() -> {
+            try (var path = new Path()) {
+                path.moveTo(xPoints[0], yPoints[0]);
+                for (int i = 1; i < nPoints; ++i) {
+                    path.lineTo(xPoints[i], yPoints[i]);
+                }
+                canvas.drawPath(path, paint);
+            }
+        });
     }
 
     @Override
     public void drawPolygon(int[] xPoints, int[] yPoints, int nPoints) {
-        log("drawPolygon");
-        beforeDraw();
-        paint.setMode(PaintMode.STROKE);
-        try (var path = new Path()) {
-            path.moveTo(xPoints[0], yPoints[0]);
-            for (int i = 1; i < nPoints; ++i)
-                path.lineTo(xPoints[i], yPoints[i]);
-            path.lineTo(xPoints[0], yPoints[0]);
-            path.closePath();
-            canvas.drawPath(path, paint);
-        }
-        paint.setMode(PaintMode.FILL);
+        stroke(() -> {
+            try (var path = new Path()) {
+                path.moveTo(xPoints[0], yPoints[0]);
+                for (int i = 1; i < nPoints; ++i) {
+                    path.lineTo(xPoints[i], yPoints[i]);
+                }
+                path.lineTo(xPoints[0], yPoints[0]);
+                path.closePath();
+                canvas.drawPath(path, paint);
+            }
+        });
     }
 
     @Override
     public void fillPolygon(int[] xPoints, int[] yPoints, int nPoints) {
-        log("[+] fillPolygon " + Arrays.toString(xPoints) + " " + Arrays.toString(yPoints) + " " + nPoints);
-        beforeDraw();
-        try (var path = new Path()) {
-            path.moveTo(xPoints[0], yPoints[0]);
-            for (int i = 1; i < nPoints; ++i)
-                path.lineTo(xPoints[i], yPoints[i]);
-            path.lineTo(xPoints[0], yPoints[0]);
-            path.closePath();
-            canvas.drawPath(path, paint);
-        }
+        fill(() -> {
+            try (var path = new Path()) {
+                path.moveTo(xPoints[0], yPoints[0]);
+                for (int i = 1; i < nPoints; ++i) {
+                    path.lineTo(xPoints[i], yPoints[i]);
+                }
+                path.lineTo(xPoints[0], yPoints[0]);
+                path.closePath();
+                canvas.drawPath(path, paint);
+            }
+        });
     }
 
     @Override
@@ -824,7 +639,6 @@ public class SkijaGraphics2D extends Graphics2D {
     @Override
     public boolean drawImage(java.awt.Image img, int dx1, int dy1, int dx2, int dy2, int sx1, int sy1, int sx2, int sy2, java.awt.Color bgcolor, java.awt.image.ImageObserver observer) {
         if (img instanceof SkijaVolatileImage) {
-            log("[+] drawImage dx1=%d dy1=%d dx2=%d dy2=%d sx1=%d sy1=%d sx2=%d sy2=%d color=%s observer=%s", dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, bgcolor, observer);
             beforeDraw();
             try (org.jetbrains.skija.Image image = ((SkijaVolatileImage) img).surface.makeImageSnapshot()) {
                 canvas.drawImageIRect(image, IRect.makeLTRB(sx1, sy1, sx2, sy2), Rect.makeLTRB(dx1, dy1, dx2, dy2));
@@ -834,22 +648,21 @@ public class SkijaGraphics2D extends Graphics2D {
             if (variant instanceof java.awt.image.BufferedImage) {
                 drawImage(variant, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, bgcolor, observer);
             } else {
-                log("drawImage %s dx1=%d dy1=%d dx2=%d dy2=%d sx1=%d sy1=%d sx2=%d sy2=%d color=%s observer=%s", img, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, bgcolor, observer);
+                throw new UnsupportedOperationException("Unrecognized variant: " + variant.getClass());
             }
         } else if (img instanceof java.awt.image.BufferedImage) {
-            log("[+] drawImage dx1=%d dy1=%d dx2=%d dy2=%d sx1=%d sy1=%d sx2=%d sy2=%d color=%s observer=%s", dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, bgcolor, observer);
             beforeDraw();
             java.awt.image.BufferedImage bi = (java.awt.image.BufferedImage) img;
             canvas.drawBitmapIRect(skBitmap(bi), IRect.makeLTRB(sx1, sy1, sx2, sy2), Rect.makeLTRB(dx1, dy1, dx2, dy2));
         } else {
-            log("drawImage %s dx1=%d dy1=%d dx2=%d dy2=%d sx1=%d sy1=%d sx2=%d sy2=%d color=%s observer=%s", img, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, bgcolor, observer);
+            throw new UnsupportedOperationException("Unrecognized variant: " + img.getClass());
         }
         return false;
     }
 
     public static final Map<java.awt.image.BufferedImage, Bitmap> rasterCache = new ConcurrentHashMap<>();
 
-    public Bitmap skBitmap(java.awt.image.BufferedImage bi) {
+    public static Bitmap skBitmap(java.awt.image.BufferedImage bi) {
         Bitmap b = rasterCache.get(bi);
         if (b != null)
             return b;
@@ -868,7 +681,6 @@ public class SkijaGraphics2D extends Graphics2D {
 
     @Override
     public void dispose() {
-        log("[+] dispose");
         paint.close();
         backgroundPaint.close();
     }

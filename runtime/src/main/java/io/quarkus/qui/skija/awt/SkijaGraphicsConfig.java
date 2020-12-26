@@ -1,4 +1,4 @@
-package io.quarkus.qui.skija;
+package io.quarkus.qui.skija.awt;
 
 public class SkijaGraphicsConfig extends java.awt.GraphicsConfiguration {
     public static final SkijaGraphicsConfig INSTANCE = new SkijaGraphicsConfig();

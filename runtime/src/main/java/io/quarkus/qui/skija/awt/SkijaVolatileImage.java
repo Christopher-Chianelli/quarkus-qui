@@ -1,4 +1,4 @@
-package io.quarkus.qui.skija;
+package io.quarkus.qui.skija.awt;
 
 import org.jetbrains.skija.Surface;
 
