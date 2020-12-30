@@ -91,10 +91,10 @@ public class TodoList implements View<TodoList.TodoListProps> {
     public Props<?> render(TodoListProps props) {
         var tasks = get(props::todo);
         return show(VLayout.class)
-                  /*.children(showItems(Text.class,
+                  .children(showItems(Text.class,
                                       tasks,
                                       (task, taskProps) -> taskProps.text(task)
-                  ))*/
+                  ))
                   .withChild(show(ComponentView.class).component(content));
     }
 }
