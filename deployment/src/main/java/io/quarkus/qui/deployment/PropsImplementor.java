@@ -36,6 +36,7 @@ import io.quarkus.qui.QuiCanvas;
 import io.quarkus.qui.View;
 import io.quarkus.qui.Window;
 import io.quarkus.qui.annotations.CollectionProp;
+import org.jetbrains.skija.Path;
 
 public class PropsImplementor {
     ClassCreator classCreator;
@@ -49,6 +50,7 @@ public class PropsImplementor {
     FieldDescriptor view;
     FieldDescriptor domLocation;
     FieldDescriptor value;
+    FieldDescriptor boundary;
     List<FieldDescriptor> fieldDescriptors;
 
     public PropsImplementor(ClassOutput classOutput, String generatedClassName,
@@ -92,6 +94,9 @@ public class PropsImplementor {
         // Generate special __domLocation__ field to hold where in the document this props is
         domLocation = classCreator.getFieldCreator("__domLocation__", DomLocation.class).getFieldDescriptor();
 
+        // Generate special __boundary__ field to store it last drawn boundary
+        boundary = classCreator.getFieldCreator("__boundary__", Path.class).getFieldDescriptor();
+
         // Generate special __value__ field to hold value of field to get
         value = classCreator.getFieldCreator("__value__", Object.class).getFieldDescriptor();
 
@@ -109,6 +114,7 @@ public class PropsImplementor {
             generateGetterSetterForImplField("Window", Window.class, window);
             generateGetterSetterForImplField("View", View.class, view);
             generateGetterSetterForImplField("DomLocation", DomLocation.class, domLocation);
+            generateGetter("getBoundary", Path.class, boundary);
             generateGetter("_get", Object.class, value);
 
             if (fieldCollectionProp.stream().anyMatch(Objects::nonNull)) {
@@ -261,6 +267,9 @@ public class PropsImplementor {
         ResultHandle renderedProps = whileLoop.invokeInterfaceMethod(render, propsView, currentProps);
         whileLoop.assign(currentProps, renderedProps);
         ResultHandle parameter = mv.getMethodParam(0);
+        ResultHandle drawnBoundary = mv.invokeInterfaceMethod(MethodDescriptor.ofMethod(QuiCanvas.class, "getBoundaryLocalizedToWindow",
+                                                                                        Path.class), parameter);
+        mv.writeInstanceField(boundary, thisObj, drawnBoundary);
         mv.invokeInterfaceMethod(draw, currentProps, parameter);
         mv.returnValue(null);
     }

@@ -3,6 +3,8 @@ package io.quarkus.qui;
 import java.util.Collections;
 import java.util.Map;
 
+import org.jetbrains.skija.Path;
+
 /**
  * Do not show this; to render a Renderable is to
  * render itself. The purpose of this class is
@@ -64,5 +66,10 @@ public interface Renderable extends Props, View {
     @Override
     default Props _setDomLocation(DomLocation domLocation) {
         return this;
+    }
+
+    @Override
+    default Path getBoundary() {
+        return null;
     }
 }

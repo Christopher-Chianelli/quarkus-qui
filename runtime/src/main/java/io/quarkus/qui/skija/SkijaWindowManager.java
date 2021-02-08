@@ -32,6 +32,7 @@ import io.quarkus.qui.devmode.WindowSetup;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.ShutdownEvent;
+import io.vertx.core.eventbus.EventBus;
 import org.jetbrains.skija.IRect;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFW;
@@ -47,6 +48,9 @@ public class SkijaWindowManager implements WindowManager {
 
     @Inject
     WindowSetup windowSetup;
+
+    @Inject
+    EventBus eventBus;
 
     GLFWVidMode vidmode;
 
@@ -86,7 +90,7 @@ public class SkijaWindowManager implements WindowManager {
                 Math.max(0, (vidmode.height() - height) / 2),
                 width,
                 height);
-        SkijaWindow window = new SkijaWindow(this, windowSetup, bounds);
+        SkijaWindow window = new SkijaWindow(this, windowSetup, bounds, eventBus);
         if (windowFutureList.isEmpty()) {
             windowListToCreate.add(window);
         } else {
@@ -122,7 +126,7 @@ public class SkijaWindowManager implements WindowManager {
             System.out.println("Success! Restoring previous windows");
             for (int i = 0; i < viewClassList.size(); i++) {
                 IRect bounds = boundsList.get(i);
-                SkijaWindow window = new SkijaWindow(this, windowSetup, bounds);
+                SkijaWindow window = new SkijaWindow(this, windowSetup, bounds, eventBus);
                 window.defaultView(viewClassList.get(i))._setAsMap(propValuesList.get(i));
                 windowFutureList.add(managedExecutor.submit(window::waitUntilClosed));
             }

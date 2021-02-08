@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.jetbrains.skija.Path;
+
 /**
  * Props describe how a view
  * will be drawn. The only methods
@@ -108,4 +110,6 @@ public interface Props<T extends Props<T>> {
      * Draws the object.
      */
     void draw(QuiCanvas canvas);
+
+    Path getBoundary();
 }

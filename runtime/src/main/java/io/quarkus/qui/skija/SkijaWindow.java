@@ -7,6 +7,10 @@ import io.quarkus.qui.View;
 import io.quarkus.qui.ViewManager;
 import io.quarkus.qui.Window;
 import io.quarkus.qui.devmode.WindowSetup;
+import io.quarkus.qui.event.MouseButtons;
+import io.quarkus.qui.event.MouseClickEvent;
+import io.quarkus.qui.event.MouseMoveEvent;
+import io.vertx.core.eventbus.EventBus;
 import org.jetbrains.skija.BackendRenderTarget;
 import org.jetbrains.skija.Canvas;
 import org.jetbrains.skija.ColorSpace;
@@ -39,17 +43,22 @@ public class SkijaWindow implements Window {
     Props<?> props;
     SkijaWindowManager windowManager;
     WindowSetup windowSetup;
+    EventBus eventBus;
+    MouseButtons mouseButtons;
     boolean isPropsDirty = true;
     boolean shouldClose = false;
     boolean saveWindowState = false;
 
-    public SkijaWindow(SkijaWindowManager windowManager, WindowSetup windowSetup, IRect bounds) {
+    public SkijaWindow(SkijaWindowManager windowManager, WindowSetup windowSetup, IRect bounds,
+                       EventBus eventBus) {
+        this.eventBus = eventBus;
         mouseXPos = bounds.getLeft();
         mouseYPos = bounds.getTop();
         width = bounds.getWidth();
         height = bounds.getHeight();
         this.windowSetup = windowSetup;
         this.windowManager = windowManager;
+        mouseButtons = new MouseButtons();
     }
 
     public void run(IRect bounds) {
@@ -170,12 +179,34 @@ public class SkijaWindow implements Window {
         });
 
         GLFW.glfwSetCursorPosCallback(window, (window, xpos, ypos) -> {
+            int oldX = this.mouseXPos;
+            int oldY = this.mouseYPos;
+
             if(os.contains("mac") || os.contains("darwin")) {
                 this.mouseXPos = (int) xpos;
                 this.mouseYPos = (int) ypos;
             } else {
                 this.mouseXPos = (int) (xpos / dpi);
                 this.mouseYPos = (int) (ypos / dpi);
+            }
+
+            int newX = this.mouseXPos;
+            int newY = this.mouseYPos;
+
+            eventBus.publish(MouseMoveEvent.ADDRESS,
+                             new MouseMoveEvent(this, oldX, oldY, newX, newY, props));
+        });
+
+        GLFW.glfwSetMouseButtonCallback(window, (window, button, action, mods) -> {
+            mouseButtons = mouseButtons.afterEvent(button, action);
+
+            if (action == GLFW.GLFW_PRESS) {
+                System.out.println("Firing event CLICK");
+                eventBus.publish(MouseClickEvent.ADDRESS,
+                                 new MouseClickEvent(this, mouseXPos, mouseYPos,
+                                                     mouseButtons));
+            } else {
+
             }
         });
 

@@ -24,11 +24,12 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>11</maven.compiler.release>
         <maven.compiler.parameters>true</maven.compiler.parameters>
-        <quarkus.version>1.9.2.Final</quarkus.version>
+        <quarkus.version>1.11.1.Final</quarkus.version>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
 
         <version.lwjgl>3.2.3</version.lwjgl>
         <version.skija>0.6.1</version.skija>
+        <version.javafx>15</version.javafx>
     </properties>
 
     <modules>
@@ -61,6 +62,12 @@
                 <version>${version.lwjgl}</version>
                 <scope>import</scope>
                 <type>pom</type>
+            </dependency>
+
+            <dependency>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-controls</artifactId>
+                <version>15</version>
             </dependency>
 
             <dependency>

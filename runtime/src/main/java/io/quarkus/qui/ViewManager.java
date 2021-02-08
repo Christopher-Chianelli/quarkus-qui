@@ -8,10 +8,17 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.literal.NamedLiteral;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import io.quarkus.qui.event.MouseClickEvent;
+import io.quarkus.qui.event.MouseListener;
+import io.quarkus.qui.event.MouseMoveEvent;
+import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.MessageConsumer;
 
 @Singleton
 public class ViewManager {
@@ -21,17 +28,22 @@ public class ViewManager {
     @Inject
     Instance<Props> propsInstance;
 
+    // @Inject
+    // EventBus eventBus;
+
     public static ViewManager INSTANCE = null;
 
     private Map<Object, Map<DomLocation, List<Props<?>>>> ownerToDomLocationToProps;
     private Map<Object, Map<DomLocation, Integer>> ownerToDomLocationToHitCount;
     private Map<View<?>, Props<?>> viewToPropsMap;
+    private Map<View<?>, List<MessageConsumer<?>>> viewToMessageConsumerMap;
 
     @PostConstruct
     public void setInstance() {
         ownerToDomLocationToProps = new HashMap<>();
         ownerToDomLocationToHitCount = new HashMap<>();
         viewToPropsMap = new HashMap<>();
+        viewToMessageConsumerMap = new HashMap<>();
         INSTANCE = this;
     }
 
@@ -47,8 +59,11 @@ public class ViewManager {
             if (!domLocationToHitCount.containsKey(domLocation)) {
                 domLocationToProps.remove(domLocation).forEach(props -> {
                     viewToPropsMap.remove(props._getView());
+                    // viewToMessageConsumerMap.get(props._getView()).forEach(MessageConsumer::unregister);
+                    // viewToMessageConsumerMap.remove(props._getView());
                     viewInstance.destroy(props._getView());
                     propsInstance.destroy(props);
+
                 });
             }
             else {
@@ -58,6 +73,8 @@ public class ViewManager {
                     List<Props<?>> toDestroyList = propsList.subList(count, propsList.size());
                     toDestroyList.forEach(props -> {
                         viewToPropsMap.remove(props._getView());
+                        // viewToMessageConsumerMap.get(props._getView()).forEach(MessageConsumer::unregister);
+                        // viewToMessageConsumerMap.remove(props._getView());
                         viewInstance.destroy(props._getView());
                         propsInstance.destroy(props);
                     });
@@ -102,6 +119,27 @@ public class ViewManager {
         props._setWindow(owner);
         props._setDomLocation(domLocation);
         viewToPropsMap.put(view, props);
+
+        List<MessageConsumer<?>> messageConsumers = new ArrayList<>();
+
+        /*if (view instanceof MouseListener) {
+            MouseListener mouseListener = (MouseListener) view;
+            messageConsumers.add(eventBus
+                                         .<MouseMoveEvent>consumer(MouseMoveEvent.ADDRESS)
+                                         .handler(message -> {
+                                             MouseMoveEvent event = message.body().localTo(props);
+                                             if (props.getBoundary() != null &&
+                                                     props.getBoundary().contains(event.getNewLocationInWindowX(),
+                                                                                  event.getNewLocationInWindowY())) {
+                                                 mouseListener.onMouseMove(event);
+                                             }
+                                         }));
+            messageConsumers.add(eventBus
+                                         .<MouseClickEvent>consumer(MouseClickEvent.ADDRESS)
+                                         .handler(message -> mouseListener.onMouseClick(message.body())));
+        }*/
+
+        // viewToMessageConsumerMap.put(view, messageConsumers);
         List<Props<?>> propList = Collections.singletonList(props);
         domLocationToProps.merge(domLocation,
                                  propList,

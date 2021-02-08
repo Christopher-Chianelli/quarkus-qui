@@ -31,6 +31,11 @@ public class SkijaQuiCanvas implements QuiCanvas {
     }
 
     @Override
+    public Path getBoundaryLocalizedToWindow() {
+        return new Path().addPath(bounds).transform(transformMatrix);
+    }
+
+    @Override
     public QuiCanvas getSubcanvas(Path newBoundary) {
         Rect bounds = newBoundary.getBounds();
         Matrix33 newTransformMatrix = this.transformMatrix

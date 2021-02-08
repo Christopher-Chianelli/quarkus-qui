@@ -24,6 +24,7 @@ public interface QuiCanvas {
      * @return The boundary of this canvas.
      */
     Path getBoundary();
+    Path getBoundaryLocalizedToWindow();
     QuiCanvas getSubcanvas(Path newBoundary);
     default QuiCanvas getSubcanvas(float x, float y, float w, float h) {
         return getSubcanvas(new Path().addRect(new Rect(x, y, x + w, y + h)));
